@@ -1,0 +1,5 @@
+# Bloqueia acesso direto a arquivos sensíveis
+<FilesMatch "^(config(\.example)?\.php|composer\.(json|lock))$">
+    Require all denied
+</FilesMatch>
+RedirectMatch 404 ^/(.*/)?vendor/

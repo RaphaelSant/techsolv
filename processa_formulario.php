@@ -5,35 +5,66 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit();
 }
 
-// 1. Coleta e sanitiza os dados do formulário (htmlspecialchars ajuda a prevenir XSS)
-$nome     = htmlspecialchars(trim($_POST['nome'] ?? ''));
-$email    = htmlspecialchars(trim($_POST['email'] ?? ''));
-$empresa  = htmlspecialchars(trim($_POST['empresa'] ?? ''));
-$mensagem = htmlspecialchars(trim($_POST['mensagem'] ?? ''));
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as MailException;
+
+require __DIR__ . '/vendor/autoload.php';
+
+// 1. Coleta os dados brutos (o escape para HTML é feito só na hora de exibir)
+$limpaLinha = fn($v) => trim(str_replace(["\r", "\n"], ' ', (string) $v));
+$nomeRaw     = $limpaLinha($_POST['nome'] ?? '');
+$emailRaw    = $limpaLinha($_POST['email'] ?? '');
+$empresaRaw  = $limpaLinha($_POST['empresa'] ?? '');
+$mensagemRaw = trim((string) ($_POST['mensagem'] ?? ''));
 
 // 2. Validação básica
-$sucesso = !(empty($nome) || empty($email) || empty($empresa) || empty($mensagem)
-    || !filter_var($email, FILTER_VALIDATE_EMAIL));
+$valido = !($nomeRaw === '' || $emailRaw === '' || $empresaRaw === '' || $mensagemRaw === ''
+    || !filter_var($emailRaw, FILTER_VALIDATE_EMAIL));
 
-if ($sucesso) {
-    // 3. Lógica de "back-end" (o que fazer com os dados)
-    // --- EXEMPLO: Enviar um e-mail para a equipe comercial ---
-    $destinatario = "comercial@techsolv.com.br"; // E-mail da sua empresa
-    $assunto = "Novo pedido de orçamento: " . $empresa;
+// 3. Envio do e-mail via SMTP (Gmail)
+$erroEnvio = false;
+if ($valido) {
+    $config = is_file(__DIR__ . '/config.php') ? require __DIR__ . '/config.php' : null;
 
-    $corpo_email  = "Você recebeu um novo contato através do site:\n\n";
-    $corpo_email .= "Nome: " . $nome . "\n";
-    $corpo_email .= "Empresa: " . $empresa . "\n";
-    $corpo_email .= "Email: " . $email . "\n";
-    $corpo_email .= "Mensagem:\n" . $mensagem . "\n";
+    try {
+        if (!$config) {
+            throw new MailException('Arquivo config.php não encontrado.');
+        }
 
-    $headers = "From: " . $email;
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = $config['smtp_host'];
+        $mail->Port       = $config['smtp_port'];
+        $mail->SMTPAuth   = true;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Username   = $config['smtp_usuario'];
+        $mail->Password   = $config['smtp_senha'];
+        $mail->CharSet    = PHPMailer::CHARSET_UTF8;
 
-    // A função mail() do PHP pode ser usada, mas para produção,
-    // recomenda-se uma biblioteca como PHPMailer para mais robustez e segurança.
-    // mail($destinatario, $assunto, $corpo_email, $headers);
+        // Envia pela própria conta; o visitante entra como "Responder para"
+        $mail->setFrom($config['smtp_usuario'], $config['remetente_nome']);
+        $mail->addAddress($config['destinatario']);
+        $mail->addReplyTo($emailRaw, $nomeRaw);
+
+        $mail->Subject = 'Novo pedido de orçamento: ' . $empresaRaw;
+        $mail->Body    = "Você recebeu um novo contato através do site:\n\n"
+            . "Nome: {$nomeRaw}\n"
+            . "Empresa: {$empresaRaw}\n"
+            . "E-mail: {$emailRaw}\n\n"
+            . "Mensagem:\n{$mensagemRaw}\n";
+
+        $mail->send();
+    } catch (MailException $e) {
+        $erroEnvio = true;
+        error_log('Falha ao enviar formulário de contato: ' . (isset($mail) ? $mail->ErrorInfo : $e->getMessage()));
+    }
 }
 
+$sucesso = $valido && !$erroEnvio;
+
+// Versões escapadas para exibição na página
+$nome  = htmlspecialchars($nomeRaw);
+$email = htmlspecialchars($emailRaw);
 $primeiroNome = explode(' ', $nome)[0] ?? '';
 ?>
 <!DOCTYPE html>
@@ -42,7 +73,7 @@ $primeiroNome = explode(' ', $nome)[0] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $sucesso ? 'Obrigado!' : 'Verifique os dados' ?> | TechSolv</title>
+    <title><?= $sucesso ? 'Obrigado!' : ($erroEnvio ? 'Erro no envio' : 'Verifique os dados') ?> | TechSolv</title>
     <meta name="theme-color" content="#12649E">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -103,6 +134,13 @@ $primeiroNome = explode(' ', $nome)[0] ?? '';
                 <p class="text-muted mb-4">Sua solicitação de orçamento foi recebida com sucesso. Nossa equipe
                     entrará em contato em até 24 horas no e-mail <strong><?= $email ?></strong>.</p>
                 <a href="index.php" class="btn btn-accent btn-lg"><i class="bi bi-arrow-left me-1"></i> Voltar para o site</a>
+            <?php elseif ($erroEnvio): ?>
+                <div class="result-icon err"><i class="bi bi-exclamation-lg"></i></div>
+                <h1 class="h3 fw-bold">Não foi possível enviar</h1>
+                <p class="text-muted mb-4">Tivemos um problema ao enviar sua mensagem. Tente novamente em alguns
+                    minutos ou fale com a gente direto pelo
+                    <a href="https://wa.me/5569993885148" target="_blank" rel="noopener">WhatsApp</a>.</p>
+                <a href="index.php#contato" class="btn btn-accent btn-lg"><i class="bi bi-arrow-left me-1"></i> Voltar ao formulário</a>
             <?php else: ?>
                 <div class="result-icon err"><i class="bi bi-exclamation-lg"></i></div>
                 <h1 class="h3 fw-bold">Verifique os dados</h1>

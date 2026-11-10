@@ -421,16 +421,12 @@
                                 <h2 class="h3 fw-bold mb-3">Fale com um especialista</h2>
                                 <p class="mb-4 opacity-75">Quer tirar uma ideia do papel ou resolver um gargalo da sua
                                     operação? Nossa equipe está pronta para entender o seu projeto.</p>
-                                <!-- TODO: confirmar e-mail, telefone e endereço oficiais -->
                                 <ul class="list-unstyled contact-list mb-0">
                                     <li><span class="ci"><i class="bi bi-envelope"></i></span>
-                                        <div><small>E-mail</small><a href="mailto:contato@techsolv.com.br">contato@techsolv.com.br</a></div>
+                                        <div><small>E-mail</small><a href="mailto:raphael.sant.emp@gmail.com">raphael.sant.emp@gmail.com</a></div>
                                     </li>
-                                    <li><span class="ci"><i class="bi bi-telephone"></i></span>
-                                        <div><small>Telefone</small><a href="tel:+551112345678">(11) 1234-5678</a></div>
-                                    </li>
-                                    <li><span class="ci"><i class="bi bi-geo-alt"></i></span>
-                                        <div><small>Endereço</small><span>Av. Paulista, 1000 – São Paulo/SP</span></div>
+                                    <li><span class="ci"><i class="bi bi-whatsapp"></i></span>
+                                        <div><small>Telefone / WhatsApp</small><a href="https://wa.me/5569993885148" target="_blank" rel="noopener">(69) 99388-5148</a></div>
                                     </li>
                                 </ul>
                             </div>
@@ -522,8 +518,8 @@
                 <div class="col-6 col-lg-4">
                     <h2 class="footer-title">Contato</h2>
                     <ul class="list-unstyled footer-links">
-                        <li><a href="mailto:contato@techsolv.com.br">contato@techsolv.com.br</a></li>
-                        <li><a href="tel:+551112345678">(11) 1234-5678</a></li>
+                        <li><a href="mailto:raphael.sant.emp@gmail.com">raphael.sant.emp@gmail.com</a></li>
+                        <li><a href="https://wa.me/5569993885148" target="_blank" rel="noopener">(69) 99388-5148</a></li>
                         <li><a href="#contato">Solicitar orçamento</a></li>
                     </ul>
                 </div>
